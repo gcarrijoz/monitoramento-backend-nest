@@ -1,0 +1,143 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Room {
+  id          Int      @id @default(autoincrement())
+  sector      String
+  floor       Int
+  number      String
+  isAvailable Boolean  @default(true) @map("is_available")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  devices     Device[] @relation("RoomDevices")
+  roomHistory RoomHistory[]
+  alerts      Alert[]  @relation("RoomAlerts")
+  patient    Patient?
+
+  @@unique([floor, sector, number])
+
+  @@map("rooms")
+}
+
+model Device {
+  id          Int      @id @default(autoincrement())
+  macAddress  String   @unique @map("mac_address")
+  description String?
+  roomId      Int? @map("room_id")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  room        Room?     @relation("RoomDevices", fields: [roomId], references: [id])
+
+  measurements Measurement[]
+  alerts       Alert[]
+
+  @@map("devices")
+}
+
+model Patient {
+  id              Int      @id @default(autoincrement())
+  name            String
+  cpf             String   @unique
+  gender          String
+  dateOfBirth     DateTime @map("date_of_birth")
+  minHeartRate    Int      @default(60) @map("min_heart_rate")  // Removido o ? e adicionado @default
+  maxHeartRate    Int      @default(100) @map("max_heart_rate") 
+  roomId          Int?      @unique @map("room_id")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  room            Room?    @relation(fields: [roomId], references: [id])
+  roomHistory     RoomHistory[]
+  measurements    Measurement[]
+  alerts          Alert[]
+
+  @@map("patients")
+}
+
+model RoomHistory {
+  id        Int      @id @default(autoincrement())
+  roomId    Int      @map("room_id")
+  patientId Int      @map("patient_id")
+  entryDate DateTime @default(now()) @map("entry_date")
+  exitDate  DateTime? @map("exit_date")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  room      Room     @relation(fields: [roomId], references: [id])
+  patient   Patient  @relation(fields: [patientId], references: [id])
+
+  @@map("room_history")
+}
+
+model Measurement {
+  id         Int      @id @default(autoincrement())
+  bpm        Int
+  sensorId   Int      @map("sensor_id")
+  patientId  Int      @map("patient_id")
+  recordedAt DateTime @default(now()) @map("recorded_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  sensor     Device   @relation(fields: [sensorId], references: [id])
+  patient    Patient  @relation(fields: [patientId], references: [id])
+
+  @@map("measurements")
+}
+
+model Alert {
+  id          Int      @id @default(autoincrement())
+  patientId   Int      @map("patient_id")
+  sensorId    Int      @map("sensor_id")
+  roomId      Int      @map("room_id")
+  bpm         Int
+  alertType   String   @map("alert_type")
+  threshold   Int
+  recordedAt  DateTime @default(now()) @map("recorded_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  sensor      Device   @relation(fields: [sensorId], references: [id])
+  room        Room     @relation("RoomAlerts", fields: [roomId], references: [id])
+  alertHistory AlertHistory[]
+
+  @@map("alerts")
+}
+
+model AlertHistory {
+  id          Int      @id @default(autoincrement())
+  alertId     Int      @map("alert_id")
+  status      String
+  resolvedAt  DateTime? @map("resolved_at")
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  alert       Alert    @relation(fields: [alertId], references: [id])
+
+  @@map("alert_history")
+}
