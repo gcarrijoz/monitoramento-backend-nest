@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { CreateMeasurementDto, UpdateMeasurementDto } from './dto/measurement.dto';
+import { CreateMeasurementDto, EspMeasurementDto, UpdateMeasurementDto } from './dto/measurement.dto';
 
 @Injectable()
 export class MeasurementService {
+    private readonly logger = new Logger(MeasurementService.name);
+
     constructor(private prisma: PrismaService) {}
 
     async create(data: CreateMeasurementDto) {
@@ -66,5 +68,47 @@ export class MeasurementService {
         await this.findOne(id);
         await this.prisma.measurement.delete({ where: { id } });
         return { message: 'Medição removida com sucesso' };
+    }
+
+    async createFromEsp(data: EspMeasurementDto) {
+        const device = await this.prisma.device.findUnique({
+          where: { macAddress: data.id_dispositivo },
+          include: {
+            room: {
+              include: {
+                patient: true
+              }
+            }
+          }
+        });
+    
+        if (!device) {
+          this.logger.warn(`Dispositivo ${data.id_dispositivo} não encontrado`);
+          throw new NotFoundException(`Dispositivo ${data.id_dispositivo} não encontrado`);
+        }
+    
+        if (!device.room?.patient) {
+          this.logger.warn(`Nenhum paciente no quarto do dispositivo ${data.id_dispositivo}`);
+          throw new NotFoundException('Nenhum paciente associado a este dispositivo');
+        }
+    
+        const patient = device.room.patient;
+    
+        return this.prisma.measurement.create({
+          data: {
+            bpm: data.bpm,
+            sensor: { connect: { id: device.id } },
+            patient: { connect: { id: patient.id } },
+            recordedAt: new Date(data.timestamp * 1000) 
+          },
+          include: {
+            sensor: true,
+            patient: {
+              include: {
+                room: true
+              }
+            }
+          }
+        });
     }
 }

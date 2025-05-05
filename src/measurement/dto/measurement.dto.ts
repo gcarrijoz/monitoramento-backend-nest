@@ -1,4 +1,4 @@
-import { IsDateString, IsInt, IsOptional } from 'class-validator';
+import { IsDateString, IsInt, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateMeasurementDto {
   @IsInt()
@@ -19,4 +19,16 @@ export class UpdateMeasurementDto {
   @IsOptional()
   @IsInt()
   bpm?: number;
+}
+
+
+export class EspMeasurementDto {
+  @IsInt()
+  bpm: number;
+
+  @IsString()
+  id_dispositivo: string;
+
+  @IsNumber()
+  timestamp: number;
 }
