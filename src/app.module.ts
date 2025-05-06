@@ -23,12 +23,14 @@ import { MeasurementService } from './measurement/measurement.service';
 import { MeasurementModule } from './measurement/measurement.module';
 import { MqttModule } from './mqtt/mqtt.module';
 import { WebSocketGatewayApp } from './websocket.gateway';
+import { EventLogService } from './event-log/event-log.service';
+import { EventLogModule } from './event-log/event-log.module';
 
 
 @Module({
-  imports: [UserModule, DeviceModule, ConfigModule.forRoot(), RoomModule, PatientModule, RoomHistoryModule, MeasurementModule, MqttModule],
+  imports: [UserModule, DeviceModule, ConfigModule.forRoot(), RoomModule, PatientModule, RoomHistoryModule, MeasurementModule, MqttModule, EventLogModule],
   controllers: [AppController, UserController, DeviceController, RoomController, PatientController, RoomHistoryController, MeasurementController],
-  providers: [AppService, UserService, DeviceService, PrismaService, RoomService, PatientService, RoomHistoryService, MeasurementService, WebSocketGatewayApp],
+  providers: [AppService, UserService, DeviceService, PrismaService, RoomService, PatientService, RoomHistoryService, MeasurementService, WebSocketGatewayApp, EventLogService],
 })
 
 export class AppModule {}

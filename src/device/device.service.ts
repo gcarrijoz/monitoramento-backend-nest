@@ -101,12 +101,24 @@ export class DeviceService {
             throw new ConflictException('Este dispositivo não está atribuído a nenhum quarto');
         }
 
-        // Remover a atribuição definindo roomId como null
+   
         return this.prisma.device.update({
             where: { id: deviceId },
             data: { roomId: null }
         });
     }
 
+  async findByMac(macAddress: string) {
+    return this.prisma.device.findUnique({
+      where: { macAddress },
+      include: {
+        room: {
+          include: {
+            patient: true
+          }
+        }
+      }
+    });
+  }
 
 }

@@ -1,0 +1,9 @@
+SENSOR 1:
+- esquerda
+- ec:64:c9:98:53:f4	
+
+
+
+SENSOR 2:
+- direita
+- 58:cf:79:d7:08:50	

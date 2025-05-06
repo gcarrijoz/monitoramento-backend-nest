@@ -21,6 +21,10 @@ export class RoomController {
         }
     }
 
+    @Get('/without-devices')
+    async listWithoutDevices(){
+        return this.roomService.findRoomsWithoutDevices();
+    }
     @Get('/with-patients')
     async listAllPatients() {
         return this.roomService.listRoomsWithPatientDetails();

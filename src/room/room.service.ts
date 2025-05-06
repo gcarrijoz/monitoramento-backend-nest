@@ -79,6 +79,8 @@ export class RoomService {
               select: {
                 id: true,
                 name: true,
+                maxHeartRate: true,
+                minHeartRate: true,
               },
             },
           },
@@ -99,5 +101,17 @@ export class RoomService {
         });
     
         return rooms;
+    }
+
+    async findRoomsWithoutDevices() {
+        const roomsWithoutDevices = await this.prisma.room.findMany({
+            where: {
+                devices: {
+                    none: {}  // Filtra quartos que não têm nenhum dispositivo relacionado
+                }
+            },
+        });
+    
+        return roomsWithoutDevices;
     }
 }
