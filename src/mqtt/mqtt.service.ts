@@ -3,7 +3,7 @@ import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import * as mqtt from 'mqtt';
 import { MeasurementService } from '../measurement/measurement.service';
 import { WebSocketGatewayApp } from '../websocket.gateway';
-import { EventLogService } from '../event-log/event-log.service'; // Novo serviço para logs
+import { EventLogService } from '../event-log/event-log.service';
 import { DeviceService } from 'src/device/device.service';
 
 @Injectable()
@@ -24,7 +24,7 @@ export class MqttService implements OnModuleInit {
   constructor(
     private readonly wsGateway: WebSocketGatewayApp,
     private readonly measurementService: MeasurementService,
-    private readonly eventLogService: EventLogService,// Novo serviço
+    private readonly eventLogService: EventLogService,
     private readonly deviceService: DeviceService,
   ) {}
 
@@ -93,6 +93,7 @@ export class MqttService implements OnModuleInit {
     await this.processBpmVariation(macAddress, bpm, timestamp);
   }
 
+  // Estado de Sensor desconectado
   private async handleDisconnectedSensor(macAddress: string) {
     const device = await this.deviceService.findByMac(macAddress);
     
@@ -107,7 +108,6 @@ export class MqttService implements OnModuleInit {
       description: 'Sensor desconectado do paciente (BPM = 0)'
     });
     
-    // NAO ENTENDI
     this.confirmedBPM.delete(macAddress);
     this.provisionalBPM.delete(macAddress);
     
@@ -138,10 +138,10 @@ export class MqttService implements OnModuleInit {
     };
   
   
-  // 3. Emita um único evento completo
   this.wsGateway.emitEvent('bpm_update', payload);
   }
-
+  
+  // Estado de processamento de variação abrupta
   private async processBpmVariation(macAddress: string, currentBpm: number, deviceTimestamp: number) {
     const lastConfirmed = this.confirmedBPM.get(macAddress);
     const provisionalValue = this.provisionalBPM.get(macAddress);
@@ -194,6 +194,7 @@ export class MqttService implements OnModuleInit {
     }
   }
 
+  // Ajusta novo nível de batimentos
   private async confirmNewBpmLevel(macAddress: string, bpm: number, deviceTimestamp: number) {
     this.confirmedBPM.set(macAddress, bpm);
     this.provisionalBPM.delete(macAddress);
@@ -220,6 +221,7 @@ export class MqttService implements OnModuleInit {
     }
   }
 
+  // Estado de Leitura Normal
   private async confirmNormalReading(macAddress: string, bpm: number, deviceTimestamp: number) {
     this.confirmedBPM.set(macAddress, bpm);
     this.provisionalBPM.delete(macAddress);
@@ -275,41 +277,8 @@ export class MqttService implements OnModuleInit {
     }, 2000);
   }
 
-  /*
+  // Perda de Conexão
   private async handleTimeoutDisconnection(macAddress: string) {
-    await this.eventLogService.createFromEsp({
-      id_dispositivo: macAddress,
-      eventType: 'ESP32_DISCONNECTED',
-      description: 'ESP32 desconectado (timeout)'
-    });
-    
-    this.lastPackets.delete(macAddress);
-    this.confirmedBPM.delete(macAddress);
-    this.provisionalBPM.delete(macAddress);
-    
-    this.wsGateway.emitEvent('sensor_status', {
-      event: 'sensor_status',
-      macAddress,
-      status: 'connection_lost', // Status mais descritivo
-      timestamp: new Date().toISOString(),
-      message: 'Perda de Conexão' // Mensagem direta
-    });
-    
-    // Adicione também um evento de bpm_update com status especial
-    this.wsGateway.emitEvent('bpm_update', {
-      event: 'bpm_update',
-      macAddress,
-      bpm: null, // Indica que não há leitura
-      status: 'connection_lost',
-      message: 'Perda de Conexão',
-      timestamp: new Date().toISOString()
-    });
-
-  }
-  */
-
-  private async handleTimeoutDisconnection(macAddress: string) {
-    // 1. Primeiro obtenha as informações da sala associada ao MAC
     const device = await this.deviceService.findByMac(macAddress);
     
     if (!device) {
@@ -326,8 +295,7 @@ export class MqttService implements OnModuleInit {
     this.lastPackets.delete(macAddress);
     this.confirmedBPM.delete(macAddress);
     this.provisionalBPM.delete(macAddress);
-    
-    // 2. Inclua todas as informações necessárias no payload
+
     const payload = {
         event: 'bpm_update',
         macAddress,
@@ -347,8 +315,6 @@ export class MqttService implements OnModuleInit {
         } : null
       };
     
-    
-    // 3. Emita um único evento completo
     this.wsGateway.emitEvent('bpm_update', payload);
   }
 }
